@@ -1,0 +1,52 @@
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM "file:///action.csv" AS line
+CREATE (action:ACTION{a_id:line.a_id, action:line.action})
+
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM "file:///keywords.csv" AS line
+CREATE (keyword:KEYWORD{k_id:line.k_id, keyword:line.keyword})
+
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM "file:///case.csv" AS line
+CREATE (case:CASE{c_id:line.c_id, case:line.case})
+
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM "file:///fact.csv" AS line
+CREATE (fact:FACT{f_id:line.f_id, fact:line.fact})
+
+USING PERIODIC COMMIT 1000
+LOAD CSV WITH HEADERS FROM "file:///object.csv" AS line
+CREATE (object:OBJECT{o_id:line.o_id, object:line.object})
+
+
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///has_keyword.csv" AS line
+MATCH (FROM:CASE{c_id:line.c_id}), (TO:KEYWORD{k_id:line.k_id})
+MERGE (FROM)-[HAS_KEYWORD: HAS_KEYWORD{type:"has_keyword"}]->(TO)
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///has_fact.csv" AS line
+MATCH (FROM:CASE{c_id:line.c_id}), (TO:FACT{f_id:line.f_id})
+MERGE (FROM)-[HAS_FACT: HAS_FACT{type:"has_fact"}]->(TO)
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///cause.csv" AS line
+MATCH (FROM:FACT{f_id:line.f_id1}), (TO:FACT{f_id:line.f_id2})
+MERGE (FROM)-[CAUSE: CAUSE{type:line.tag}]->(TO)
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///do.csv" AS line
+MATCH (FROM:OBJECT{o_id:line.o_id}), (TO:ACTION{a_id:line.a_id})
+MERGE (FROM)-[DO: DO{type:"do"}]->(TO)
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///effect.csv" AS line
+MATCH (FROM:ACTION{a_id:line.a_id}), (TO:OBJECT{o_id:line.o_id})
+MERGE (FROM)-[EFFECT: EFFECT{type:"effect"}]->(TO)
+
+
+USING PERIODIC COMMIT 5000
+LOAD CSV WITH HEADERS FROM "file:///has_object.csv" AS line
+MATCH (FROM:FACT{f_id:line.f_id}), (TO:OBJECT{o_id:line.o_id})
+MERGE (FROM)-[HAS_OBJECT: HAS_OBJECT{type:"has_object"}]->(TO)

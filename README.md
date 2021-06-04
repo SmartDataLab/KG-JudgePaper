@@ -1,13 +1,32 @@
-# CausalityEventExtraction
-self complement of templated based causality event extraction 基于因果关系知识库的因果事件图谱构建demo
+# 法律文书知识图谱构建
 
-# 项目介绍
-现实社会是个逻辑社会，大量的逻辑即逻辑经验存在于我们的脑海中，而这些逻辑经验是无法穷举出来的，靠大量人工的总结，显然不切实际。然而，幸好人类将这种逻辑用文字表达出来了，这为我们利用自然语言处理技术实现这种因果逻辑的抽取提供了可能性。不过，受限于自己的技术水平，目前还无法将深度学习这套高端的打发应用于因果事件抽取当中，而以构造和总结因果模板，结合中文语言特点，构建因果语言知识库的方式代替。
-本项目是对因果事件抽取以及因果知识图谱构建的一种尝试。
+## Quick Start
 
-# 技术路线
-因果事件图谱技术流程上遵循以下流程：    
-![image](https://github.com/liuhuanyong/CausalityEventGraph/blob/master/image/schema.jpg)
+需要安装好 neo4j(图数据库)和 ltp(哈工大自然语言处理工具)
+
+```
+cd src
+python get_json_dict.py
+cp neo4j_csv/*.csv /var/lib/neo4j/import/
+cypher-shell #
+# 执行 neo4j_csv/neo4j_import_script.txt 中的数据导入命令
+```
+
+## 代码解释
+
+构建法律文书图谱，首先聚焦于关注的实体（对应于知识图谱的节点），法律文书的标题（Case）、案件重点(Keyword)、案件关键事实（Fact）、案件重要对象(Obeject)、案件关键动作(Action)是我们关注的对象。其中法律裁判文书有一个重要特征，重视因果推断逻辑，有因果关联的事实是我们关注的重点，其中涉及的对象和动作也有重要意义。
+
+基于此，对于不同节点，我们关心以下关系：
+(1) (Case,Keyword,has_keyword)
+(2) (Case,Fact,has_fact)
+(3) (Fact1,Fact2,Casue) Cause 可以是不同的因果类型
+(4) (Fact,Object,has_object)
+(5) (Object,Action,do)
+(6) (Action,Object,Effect)
+
+最主要的两个任务是从文本中找到 Fact，再从 Fact 找到 Object、Action。对于第一个任务，采用因果规则的字串匹配，来寻找具有因果逻辑的事实，再对事实进行语义依存分析，根据语义依存分析的理论，关于动词与形容词，分别设计一套针对解析树的匹配规则。
+
+## 因果逻辑匹配
 
 主要包括以下几个步骤：  
 1、因果知识库的构建。因果知识库的构建包括因果连词库，结果词库、因果模式库等。  
@@ -15,32 +34,44 @@ self complement of templated based causality event extraction 基于因果关系
 3、因果事件抽取。这个包括基于因果模式库的因果对抽取。  
 4、事件表示。这是整个因果图谱构建的核心问题，因为事件图谱本质上是联通的，如何选择一种恰当（短语、短句、句子主干）等方式很重要。  
 5、事件融合。事件融合跟知识图谱中的实体对齐任务很像  
-6、事件存储。事件存储是最后步骤，基于业务需求，可以用相应的数据库进行存储，比如图数据库等。    
+6、事件存储。事件存储是最后步骤，基于业务需求，可以用相应的数据库进行存储，比如图数据库等。
 
-# 最终效果
-经过以上几个流程之后，可以支持各类查询，比如已知原因找结果，已知结果找原因等，这都很有事情，总之，数据库有了，我们可以做的事情有很多，接下来就是我们脑洞的事情了。
-接下来以以下几个事件在因果知识库中查询一把：
-以上几个图展示了输入既定事件在数据库中相似的事件（一度），相似事件导致的结果（二度节点）。
-# 范冰冰偷税漏税事件
-![image](https://github.com/liuhuanyong/CausalityEventGraph/blob/master/image/fangbingbing.png)
+Fact1 -因果类别-> Fact2
 
-# 美国攻打伊拉克事件
-![image](https://github.com/liuhuanyong/CausalityEventGraph/blob/master/image/gongda.png)
+## 依存语义分析
 
-# 寿光发生洪水事件
-![image](https://github.com/liuhuanyong/CausalityEventGraph/blob/master/image/shouguang.png)
+利用 ltp 进行 sdp(Semantic Dependency Parsing),具体结果的符号参考 ltp 官网。
 
-# 总结
-1）基于规则这套，很实用，但问题不少，规则维护比较多  
-2）事件表示这块一定要好好想想啊  
-3）事件融合这块，利用各种相似度度量进行计算，都有一定缺陷  
+### 针对动词
 
-# question?
-send mail to lhy_in_blcu@126.com  
-If any question about the project or me ,see https://liuhuanyong.github.io/
+依存分析中最接近根节点的动词以及接续动词作为 Action，其对于的主体和客体为实体。
 
-# contact?
-如有自然语言处理、知识图谱、事理图谱、社会计算、语言资源建设等问题或合作，可联系我：    
-1、我的github项目介绍：https://liuhuanyong.github.io  
-2、我的csdn博客：https://blog.csdn.net/lhy2014  
-3、about me:刘焕勇，中国科学院软件研究所，lhy_in_blcu@126.com  
+(('被告人', 'AGT'), ('犯', 'dCONT'), '判处')
+
+### 针对形容词的匹配规则
+
+FEAT -a-> AGT
+
+例子：
+
+["夫妻感情不错", "夫妻感情日渐恶化", "现夫妻感情已经全破裂", "夫妻关系名存实亡"]
+
+## 访问图数据库
+
+对于 python 可以利用 py2neo 工具
+
+```py
+from py2neo import Graph
+graph = Graph()
+def match_object_name(graph, val):
+    sql = (
+        "MATCH (n2:FACT)-[rel]->(n1) WHERE n1.object=~'.*"
+        + str(val)
+        + ".*' RETURN n1, rel, n2 LIMIT 40;"
+    )
+    answer = graph.run(sql).data()
+    return answer
+match_object_name(graph,"夫妻")
+```
+
+更多匹配请参考 neo4j 的 sql 语法
