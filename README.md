@@ -17,14 +17,42 @@ cypher-shell #
 构建法律文书图谱，首先聚焦于关注的实体（对应于知识图谱的节点），法律文书的标题（Case）、案件重点(Keyword)、案件关键事实（Fact）、案件重要对象(Obeject)、案件关键动作(Action)是我们关注的对象。其中法律裁判文书有一个重要特征，重视因果推断逻辑，有因果关联的事实是我们关注的重点，其中涉及的对象和动作也有重要意义。
 
 基于此，对于不同节点，我们关心以下关系：
+
 (1) (Case,Keyword,has_keyword)
+
 (2) (Case,Fact,has_fact)
+
 (3) (Fact1,Fact2,Casue) Cause 可以是不同的因果类型
+
 (4) (Fact,Object,has_object)
+
 (5) (Object,Action,do)
+
 (6) (Action,Object,Effect)
 
 最主要的两个任务是从文本中找到 Fact，再从 Fact 找到 Object、Action。对于第一个任务，采用因果规则的字串匹配，来寻找具有因果逻辑的事实，再对事实进行语义依存分析，根据语义依存分析的理论，关于动词与形容词，分别设计一套针对解析树的匹配规则。
+
+## 节点数据统计
+
+- 法律文书的标题（Case）1000
+- 案件重点(Keyword) 418
+- 案件关键事实（Fact） 19800
+- 案件重要对象(Obeject) 8020
+- 案件关键动作(Action) 2248
+
+## 关系数据统计
+
+(1) (Case,Keyword,has_keyword) 1745
+
+(2) (Case,Fact,has_fact) 19800
+
+(3) (Fact1,Fact2,Casue) 9900
+
+(4) (Fact,Object,has_object) 44107
+
+(5) (Object,Action,do) 28187
+
+(6) (Action,Object,Effect) 28187
 
 ## 因果逻辑匹配
 
